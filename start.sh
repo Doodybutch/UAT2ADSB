@@ -50,7 +50,7 @@ INSTALL_FOLDER=/home/tim/Desktop/uat2avr/
 UAT_SOURCE=192.168.1.55:30978
 AVR_OUT_PORT=30977
 ENABLE_BAILOUT=true  # Enable this if you reboot daily (which you should)
-MAX_RETRYS=64
+MAX_RETRYS=3
 ENABLE_LOG=true
 
 # NEED PERMISSION to write status log
@@ -88,7 +88,7 @@ fi
 
 if [ ENABLE_LOG ]; then\
  if [ $COUNTER -eq 1 ]; then
-  printf "Starting R-C link ($COUNTER) $(date +%m/%d/%y) $(date +%H:%M:%S)\n"\
+  printf "Starting R-C link   ($COUNTER) $(date +%m/%d/%y) $(date +%H:%M:%S)\n"\
   >> ${INSTALL_FOLDER}status.log
   else
   printf "Restarting R-C link ($COUNTER) $(date +%m/%d/%y) $(date +%H:%M:%S)\n"\
