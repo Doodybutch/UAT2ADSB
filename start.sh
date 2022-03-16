@@ -5,12 +5,15 @@
 
 # This script sets up the uat2avr conversion program to receive a UAT data stream
 # from UAT_SOURCE and makes translated AVR (raw) data available on AVR_OUT_PORT
-# It requires the uat2avr executable program to be in INSTALL_FOLDER
+# It requires the uat2avr executable to be in INSTALL_FOLDER
 # It optionally maintains a log called "status.log" in INSTALL_FOLDER
 # 
 # It optionally will bailout after MAX_RETRYS if it cannot connect to UAT_SOURCE
 # It is "normal" for dump978-fa to drop the connection at random about once an hour!
 # This script is written to compensate for that bug and keep the pipeline intact
+# It is assumed that you have UAT data available on your device or LAN (usually port 30978)
+# from dump978 or dump978-fa and optionally BEAST data.
+
 # It is strongly recommended that you automatically reboot your ADS-B station once a day
 # during the early morning using an automated crontab entry.  If you do not reboot your station
 # you should set ENABLE_BAILOUT to false (below)
@@ -27,18 +30,17 @@
 # --outServer beast:32005
 # --web 8787
 # 
-# DO NOT PUT COMMENTS IN THESE modeSmixer2CONFIGURATION FILES!
+# DO NOT PUT COMMENTS IN THE modeSmixer2CONFIGURATION FILES.
 # 
-# and maybe other stuff - read the documentation.  YOU DO NOT HAVE TO TELL modeSmixer2 what type
+# YOU DO NOT HAVE TO TELL modeSmixer2 what type
 # of data stream you are feeding because it automatically detects this.
-# You feed the combined stream to ADSB Exchange or PlaneFinder by changing the port in
+# You feed the combined stream to ADSB Exchange, PlaneFinder,etc by changing the port in
 # their configuration files from 30005 to 32005.
 #
 # This script and the uat2avr program have been tested with flightaware dump978-fa and with
 # ADSB Exchange and with PlaneFinder on the Raspberry Pi and Ubuntu Linux.
-# It does not work with FlightRadar24 or RadarBox.
-# RadarBox has alternate way to feed UAT # data from dump978-fa which I describe in the README.md File.
-# FlightRadar24 does not display # UAT traffic as far as I can tell as of March 2022.
+# It does work with FlightRadar24 or RadarBox but they interpret UAT aircraft as ADS-B.
+# RadarBox has alternate way to feed UAT data from dump978 which I describe in the README.md File.
 #
 # You can run this from a terminal.
 # Just change to the directory where start.sh (this script) # is located and enter "./start.sh" without the quotes.
@@ -46,21 +48,19 @@
 # without the quotes and /dir/dir/ is the directory where start.sh is located and it will start automatically on reboot.
  
 
-INSTALL_FOLDER=/home/tim/Desktop/uat2avr/
-UAT_SOURCE=192.168.1.55:30978
+INSTALL_FOLDER=/home/pi/uat2avr/
+UAT_SOURCE=localhost:30978
 AVR_OUT_PORT=30977
 ENABLE_BAILOUT=true  # Enable this if you reboot daily (which you should)
-MAX_RETRYS=3
+MAX_RETRYS=64
 ENABLE_LOG=true
 
-# NEED PERMISSION to write status log
-chown $USER:$USER ${INSTALL_FOLDER}
-
-cd ${INSTALL_FOLDER}
 COUNTER=0
 
-if [ ENABLE_LOG ]; then printf \
-"\nInitializing converter  $(date +%m/%d/%y) $(date +%H:%M:%S)\n"\
+if [ ENABLE_LOG ]; then
+ chown $USER:$USER ${INSTALL_FOLDER} 
+ printf\
+ "\nInitializing converter  $(date +%m/%d/%y) $(date +%H:%M:%S)\n"\
  >> ${INSTALL_FOLDER}status.log
 fi
 
@@ -68,9 +68,7 @@ socat tcp4-listen:30976,fork STDOUT \
 | ${INSTALL_FOLDER}uat2avr | \
 socat STDIN tcp4-listen:${AVR_OUT_PORT},forever,fork,interval=5 &
 
-#  YOU NEED THIS LOOP BECAUSE dump978-fa drops the connection at random about every hour
-
-while true  
+while true  #  YOU NEED THIS LOOP BECAUSE dump978 drops the connection about every hour
 do
 
 COUNTER=$((COUNTER + 1))
@@ -88,6 +86,7 @@ fi
 
 if [ ENABLE_LOG ]; then\
  if [ $COUNTER -eq 1 ]; then
+  sleep 10
   printf "Starting R-C link   ($COUNTER) $(date +%m/%d/%y) $(date +%H:%M:%S)\n"\
   >> ${INSTALL_FOLDER}status.log
   else
